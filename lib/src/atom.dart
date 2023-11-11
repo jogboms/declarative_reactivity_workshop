@@ -47,12 +47,29 @@ mixin AtomContext<U> {
 
 @optionalTypeArgs
 final class AtomContainer<U> implements AtomContext<U> {
+  AtomContainer({
+    AtomContainer? parent,
+  }) : _elements = parent?._elements ?? {};
+
+  final Map<Atom, AtomElement> _elements;
+
   @override
   T get<T>(
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    throw UnimplementedError();
+    switch (_elements[atom]) {
+      case AtomElement<T> element:
+        return element.value;
+      case _:
+        final element = atom.createElement();
+        _elements[atom] = element;
+        final value = atom.factory(
+          AtomContainer(parent: this),
+        );
+        element.setValue(value);
+        return value;
+    }
   }
 
   @override
@@ -161,7 +178,21 @@ class AtomElement<T> {
 
   final Atom<T> atom;
 
-  late T value;
+  T? _value;
+
+  T get value {
+    if (_value case final value?) {
+      return value;
+    }
+
+    throw StateError('The value of $atom has not been initialized.');
+  }
+
+  T setValue(T value) {
+    _value = value;
+
+    return value;
+  }
 
   @override
   bool operator ==(Object other) =>
