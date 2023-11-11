@@ -96,10 +96,13 @@ extension AtomWidgetContext on BuildContext {
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    return AtomWidgetMixin.of(this).container.get(
-          atom,
-          rebuildOnChange: rebuildOnChange,
-        );
+    if (rebuildOnChange) {
+      listen(atom, (_, __) {
+        (this as Element).markNeedsBuild();
+      });
+    }
+
+    return AtomWidgetMixin.of(this).container.get(atom, rebuildOnChange: false);
   }
 
   /// Listens to changes on [atom]. Subscriptions will be automatically cancelled when the widget is rebuilt and/or disposed.
