@@ -19,12 +19,18 @@ mixin AtomWidgetMixin<T extends StatefulWidget> on State<T> {
 
   late final _subscriptions = <BuildContext, Set<AtomSubscription>>{};
 
+  void _scheduleListenersCleanupFor(BuildContext context) {
+    scheduleMicrotask(() {
+      _subscriptions
+        ..[context]?.forEach((sub) => sub.cancel())
+        ..remove(context);
+    });
+  }
+
   @override
   void dispose() {
-    for (final subscriptions in _subscriptions.values) {
-      for (final subscription in subscriptions) {
-        subscription.cancel();
-      }
+    for (final context in _subscriptions.keys) {
+      _scheduleListenersCleanupFor(context);
     }
     super.dispose();
   }
@@ -96,24 +102,23 @@ extension AtomWidgetContext on BuildContext {
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
+    final state = AtomWidgetMixin.of(this);
     if (rebuildOnChange) {
       listen(atom, (_, __) {
-        (this as Element).markNeedsBuild();
+        if (this case final Element element when element.debugIsActive) {
+          element.markNeedsBuild();
+        } else {
+          state._scheduleListenersCleanupFor(this);
+        }
       });
     }
 
-    return AtomWidgetMixin.of(this).container.get(atom, rebuildOnChange: false);
+    return state.container.get(atom, rebuildOnChange: false);
   }
 
   /// Listens to changes on [atom]. Subscriptions will be automatically cancelled when the widget is rebuilt and/or disposed.
   void listen<T>(Atom<T> atom, AtomListener<T> listener) {
-    final state = AtomWidgetMixin.of(this);
-
-    scheduleMicrotask(() {
-      state._subscriptions
-        ..[this]?.forEach((_) => _.cancel())
-        ..remove(this);
-    });
+    final state = AtomWidgetMixin.of(this).._scheduleListenersCleanupFor(this);
 
     WidgetsBinding.instance.endOfFrame.then((_) {
       final subscription = listenManual(atom, listener, fireImmediately: false);
