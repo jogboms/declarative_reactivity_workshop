@@ -69,6 +69,8 @@ final class AtomContainer<U> implements AtomContext<U> {
   final AtomElement<U>? _owner;
   final AtomBinding _binding;
 
+  VoidCallback? _disposeCallback;
+
   @override
   T get<T>(
     Atom<T> atom, {
@@ -122,9 +124,28 @@ final class AtomContainer<U> implements AtomContext<U> {
   void invalidateSelf() => _owner?._invalidate();
 
   @override
-  void onDispose(VoidCallback callback) {}
+  void onDispose(VoidCallback callback) {
+    if (_owner case final element?) {
+      element._disposeCallback += callback;
+    } else {
+      _disposeCallback += callback;
+    }
+  }
 
-  void dispose() {}
+  void dispose() {
+    if (_owner case final element?) {
+      element._dispose();
+    } else {
+      for (final element in _binding._elements.values) {
+        element._dispose();
+      }
+      _binding.dispose();
+    }
+
+    final previousCallback = _disposeCallback;
+    _disposeCallback = null;
+    previousCallback?.call();
+  }
 
   AtomElement<T> _resolve<T>(
     Atom<T> atom, {
@@ -227,6 +248,7 @@ class AtomElement<T> {
   final Set<AtomElement> _dependents = {};
 
   AtomContainer<T>? _container;
+  VoidCallback? _disposeCallback;
   T? _value;
 
   T get value {
@@ -260,6 +282,7 @@ class AtomElement<T> {
   }
 
   void _invalidate() {
+    _runDispose();
     _mount();
   }
 
@@ -270,6 +293,20 @@ class AtomElement<T> {
 
   void _dependsOn(AtomElement element) => element._dependents.add(this);
 
+  void _runDispose() {
+    final previousCallback = _disposeCallback;
+    _disposeCallback = null;
+    previousCallback?.call();
+  }
+
+  void _dispose() {
+    _runDispose();
+    _value = null;
+    _container = null;
+    _listeners.clear();
+    _dependents.clear();
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) || other is AtomElement && runtimeType == other.runtimeType && atom == other.atom;
@@ -279,4 +316,11 @@ class AtomElement<T> {
 
   @override
   String toString() => 'AtomElement<${atom.name ?? T}>($hashCode)';
+}
+
+extension on VoidCallback? {
+  VoidCallback operator +(VoidCallback other) => () {
+        this?.call();
+        other();
+      };
 }
