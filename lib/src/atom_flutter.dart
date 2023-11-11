@@ -82,12 +82,15 @@ extension AtomWidgetContext on BuildContext {
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    throw UnimplementedError();
+    return AtomWidgetMixin.of(this).container.get(
+          atom,
+          rebuildOnChange: rebuildOnChange,
+        );
   }
 
   /// Listens to changes on [atom]. Subscriptions will be automatically cancelled when the widget is rebuilt and/or disposed.
   void listen<T>(Atom<T> atom, AtomListener<T> listener) {
-    throw UnimplementedError();
+    listenManual(atom, listener, fireImmediately: false);
   }
 
   /// Listens to changes on [atom]. If [fireImmediately] is true, the listener will be called immediately with the current value.
@@ -95,17 +98,12 @@ extension AtomWidgetContext on BuildContext {
     Atom<T> atom,
     AtomListener<T> listener, {
     bool fireImmediately = false,
-  }) {
-    throw UnimplementedError();
-  }
+  }) =>
+      AtomWidgetMixin.of(this).container.listen(atom, listener, fireImmediately: fireImmediately);
 
   /// Mutates [atom] with [mutator] and returns the new value.
-  void mutate<T>(Atom<T> atom, AtomMutation<T> mutator) {
-    throw UnimplementedError();
-  }
+  void mutate<T>(Atom<T> atom, AtomMutation<T> mutator) => AtomWidgetMixin.of(this).container.mutate<T>(atom, mutator);
 
   /// Invalidates [atom] so that it will rebuild.
-  void invalidate<T>(Atom<T> atom) {
-    throw UnimplementedError();
-  }
+  void invalidate<T>(Atom<T> atom) => AtomWidgetMixin.of(this).container.invalidate(atom);
 }
