@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'async_state.dart';
 import 'log.dart';
 import 'src/atom.dart';
 import 'src/atom_flutter.dart';
@@ -148,6 +149,15 @@ class _PageState extends State<Page> {
                         },
                       ),
                     ],
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) => context.get(delayed).when(
+                            loading: () => const Text('Delayed: Loading..'),
+                            refreshing: (data) => Text('Delayed: Refreshing... ($data)'),
+                            data: (data) => Text('Delayed: $data'),
+                            error: (error, _) => Text('Delayed: Error: $error'),
+                          ),
+                    ),
                   ],
                 ),
               ),
@@ -184,6 +194,11 @@ class _PageState extends State<Page> {
                   TextButton(
                     onPressed: () => context.invalidate(counter),
                     child: const Text('invalidate counter'),
+                  ),
+                  spacing,
+                  TextButton(
+                    onPressed: () => context.invalidate(delayed),
+                    child: const Text('invalidate delayed'),
                   ),
                   spacing,
                   const Divider(),
