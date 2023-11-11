@@ -71,18 +71,7 @@ final class AtomContainer<U> implements AtomContext<U> {
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    switch (_binding._elements[atom]) {
-      case AtomElement<T> element:
-        return element.value;
-      case _:
-        final element = atom.createElement();
-        _binding._elements[atom] = element;
-        final value = atom.factory(
-          AtomContainer(parent: this),
-        );
-        element.setValue(value);
-        return value;
-    }
+    return _resolve(atom).value;
   }
 
   @override
@@ -96,7 +85,8 @@ final class AtomContainer<U> implements AtomContext<U> {
 
   @override
   T mutate<T>(Atom<T> atom, AtomMutation<T> mutator) {
-    throw UnimplementedError();
+    final element = _resolve(atom);
+    return element.setValue(mutator(element.value));
   }
 
   @override
@@ -116,6 +106,21 @@ final class AtomContainer<U> implements AtomContext<U> {
   void onDispose(VoidCallback callback) {}
 
   void dispose() {}
+
+  AtomElement<T> _resolve<T>(Atom<T> atom) {
+    switch (_binding._elements[atom]) {
+      case AtomElement<T> element:
+        return element;
+      case _:
+        final element = atom.createElement();
+        _binding._elements[atom] = element;
+        final value = atom.factory(
+          AtomContainer(parent: this),
+        );
+
+        return element..setValue(value);
+    }
+  }
 }
 
 /// A [Atom] that can be used to store a value.
