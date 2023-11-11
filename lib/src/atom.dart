@@ -83,7 +83,17 @@ final class AtomContainer<U> implements AtomContext<U> {
     AtomListener<T> listener, {
     bool fireImmediately = false,
   }) {
-    throw UnimplementedError();
+    final element = _resolve(atom);
+    final cancel = element._addListener(listener);
+
+    if (fireImmediately) {
+      listener(null, element.value);
+    }
+
+    return (
+      get: () => element.value,
+      cancel: cancel,
+    );
   }
 
   @override
@@ -207,6 +217,7 @@ class AtomElement<T> {
   AtomElement(this.atom);
 
   final Atom<T> atom;
+  final Set<AtomListener<T>> _listeners = {};
   final Set<AtomElement> _dependents = {};
 
   AtomContainer<T>? _container;
@@ -222,8 +233,12 @@ class AtomElement<T> {
 
   T setValue(T value) {
     if (_value != value) {
+      final previous = _value;
       _value = value;
 
+      for (final listener in _listeners) {
+        listener(previous, value);
+      }
       for (final dependent in _dependents) {
         dependent._mount();
       }
@@ -236,6 +251,11 @@ class AtomElement<T> {
     if (_container case final container?) {
       setValue(atom.factory(container));
     }
+  }
+
+  VoidCallback _addListener(AtomListener<T> listener) {
+    _listeners.add(listener);
+    return () => _listeners.remove(listener);
   }
 
   void _dependsOn(AtomElement element) => element._dependents.add(this);
