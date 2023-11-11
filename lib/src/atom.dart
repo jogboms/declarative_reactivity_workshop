@@ -10,10 +10,78 @@ typedef AtomSubscription<T> = ({ValueCallback<T> get, VoidCallback cancel});
 
 /// A context that can be used to interact with [Atom]s.
 @optionalTypeArgs
-mixin AtomContext<U> {}
+mixin AtomContext<U> {
+  /// Returns the current value of [atom]. If [rebuildOnChange] is true, it will rebuild itself when the [atom] changes.
+  T get<T>(
+    Atom<T> atom, {
+    bool rebuildOnChange = true,
+  });
+
+  /// Listens to changes on [atom]. If [fireImmediately] is true, the listener will be called immediately with the current value.
+  AtomSubscription<T> listen<T>(
+    Atom<T> atom,
+    AtomListener<T> listener, {
+    bool fireImmediately = false,
+  });
+
+  /// Mutates [atom] with [mutator] and returns the new value.
+  @protected
+  T mutate<T>(Atom<T> atom, AtomMutation<T> mutator);
+
+  /// Mutates itself and returns the new value.
+  U? mutateSelf(AtomMutation<U?> mutator);
+
+  /// Invalidates [atom] so that it will rebuild.
+  @protected
+  void invalidate<T>(Atom<T> atom);
+
+  /// Invalidates itself so that it will rebuild.
+  void invalidateSelf();
+
+  /// Registers a [callback] to be called when the [Atom] is invalidated or disposed.
+  void onDispose(VoidCallback callback);
+}
 
 @optionalTypeArgs
 final class AtomContainer<U> implements AtomContext<U> {
+  @override
+  T get<T>(
+    Atom<T> atom, {
+    bool rebuildOnChange = true,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  AtomSubscription<T> listen<T>(
+    Atom<T> atom,
+    AtomListener<T> listener, {
+    bool fireImmediately = false,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  T mutate<T>(Atom<T> atom, AtomMutation<T> mutator) {
+    throw UnimplementedError();
+  }
+
+  @override
+  @internal
+  U? mutateSelf(AtomMutation<U?> mutator) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void invalidate<T>(Atom<T> atom) {}
+
+  @override
+  @internal
+  void invalidateSelf() {}
+
+  @override
+  void onDispose(VoidCallback callback) {}
+
   void dispose() {}
 }
 
