@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:meta/meta.dart';
 
@@ -14,6 +16,18 @@ mixin AtomWidgetMixin<T extends StatefulWidget> on State<T> {
 
   @internal
   AtomContainer get container;
+
+  late final _subscriptions = <BuildContext, Set<AtomSubscription>>{};
+
+  @override
+  void dispose() {
+    for (final subscriptions in _subscriptions.values) {
+      for (final subscription in subscriptions) {
+        subscription.cancel();
+      }
+    }
+    super.dispose();
+  }
 }
 
 class _AtomWidgetMixinMarker extends InheritedWidget {
@@ -90,7 +104,22 @@ extension AtomWidgetContext on BuildContext {
 
   /// Listens to changes on [atom]. Subscriptions will be automatically cancelled when the widget is rebuilt and/or disposed.
   void listen<T>(Atom<T> atom, AtomListener<T> listener) {
-    listenManual(atom, listener, fireImmediately: false);
+    final state = AtomWidgetMixin.of(this);
+
+    scheduleMicrotask(() {
+      state._subscriptions
+        ..[this]?.forEach((_) => _.cancel())
+        ..remove(this);
+    });
+
+    WidgetsBinding.instance.endOfFrame.then((_) {
+      final subscription = listenManual(atom, listener, fireImmediately: false);
+      state._subscriptions.update(
+        this,
+        (value) => value..add(subscription),
+        ifAbsent: () => {subscription},
+      );
+    });
   }
 
   /// Listens to changes on [atom]. If [fireImmediately] is true, the listener will be called immediately with the current value.
