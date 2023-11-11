@@ -8,3 +8,7 @@ final delayed = FutureAtom((_) {
     () => Random().nextInt(100),
   );
 });
+
+final delayedByTen = FutureAtom((context) async {
+  return await context.async(delayed) * 10;
+});

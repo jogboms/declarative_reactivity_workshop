@@ -158,6 +158,15 @@ class _PageState extends State<Page> {
                             error: (error, _) => Text('Delayed: Error: $error'),
                           ),
                     ),
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) => context.get(delayedByTen).when(
+                            loading: () => const Text('DelayedByTen: Loading..'),
+                            refreshing: (data) => Text('DelayedByTen: Refreshing... ($data)'),
+                            data: (data) => Text('DelayedByTen: $data'),
+                            error: (error, _) => Text('DelayedByTen: Error: $error'),
+                          ),
+                    ),
                   ],
                 ),
               ),
@@ -199,6 +208,11 @@ class _PageState extends State<Page> {
                   TextButton(
                     onPressed: () => context.invalidate(delayed),
                     child: const Text('invalidate delayed'),
+                  ),
+                  spacing,
+                  TextButton(
+                    onPressed: () => context.invalidate(delayedByTen),
+                    child: const Text('invalidate delayedByTen'),
                   ),
                   spacing,
                   const Divider(),

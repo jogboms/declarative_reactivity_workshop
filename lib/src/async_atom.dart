@@ -5,6 +5,22 @@ import 'atom.dart';
 
 typedef AsyncAtomFactory<T, U> = U Function(AtomContext<AsyncValue<T>> context);
 
+extension AsyncAtomContext<U> on AtomContext<U> {
+  Future<T> async<T>(Atom<AsyncValue<T>> atom) {
+    final completer = Completer<T>();
+
+    listen(atom, (_, value) {
+      if (completer.isCompleted) {
+        invalidateSelf();
+      } else if (value case final AsyncData<T> data) {
+        completer.complete(data.value);
+      }
+    }, fireImmediately: true);
+
+    return completer.future;
+  }
+}
+
 final class FutureAtom<T> extends Atom<AsyncValue<T>> {
   FutureAtom(AsyncAtomFactory<T, FutureOr<T>> factory, {super.key, super.name})
       : super((context) {
