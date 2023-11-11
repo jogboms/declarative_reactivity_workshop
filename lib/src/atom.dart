@@ -264,7 +264,7 @@ class AtomElement<T> {
       final previous = _value;
       _value = value;
 
-      for (final listener in _listeners) {
+      for (final listener in _listeners.toList(growable: false)) {
         listener(previous, value);
       }
       for (final dependent in _dependents) {
