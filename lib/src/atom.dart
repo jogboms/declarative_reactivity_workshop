@@ -61,9 +61,12 @@ final class AtomBinding {
 @optionalTypeArgs
 final class AtomContainer<U> implements AtomContext<U> {
   AtomContainer({
+    AtomElement<U>? owner,
     AtomContainer? parent,
-  }) : _binding = parent?._binding ?? AtomBinding._();
+  })  : _owner = owner,
+        _binding = parent?._binding ?? AtomBinding._();
 
+  final AtomElement<U>? _owner;
   final AtomBinding _binding;
 
   @override
@@ -71,7 +74,7 @@ final class AtomContainer<U> implements AtomContext<U> {
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    return _resolve(atom).value;
+    return _resolve(atom, track: rebuildOnChange).value;
   }
 
   @override
@@ -107,18 +110,27 @@ final class AtomContainer<U> implements AtomContext<U> {
 
   void dispose() {}
 
-  AtomElement<T> _resolve<T>(Atom<T> atom) {
+  AtomElement<T> _resolve<T>(
+    Atom<T> atom, {
+    bool track = false,
+  }) {
     switch (_binding._elements[atom]) {
       case AtomElement<T> element:
+        if (track) {
+          _owner?._dependsOn(element);
+        }
         return element;
       case _:
         final element = atom.createElement();
-        _binding._elements[atom] = element;
-        final value = atom.factory(
-          AtomContainer(parent: this),
-        );
+        final container = AtomContainer(owner: element, parent: this);
 
-        return element..setValue(value);
+        _binding._elements[atom] = element.._container = container;
+
+        if (track) {
+          _owner?._dependsOn(element);
+        }
+
+        return element.._mount();
     }
   }
 }
@@ -195,7 +207,9 @@ class AtomElement<T> {
   AtomElement(this.atom);
 
   final Atom<T> atom;
+  final Set<AtomElement> _dependents = {};
 
+  AtomContainer<T>? _container;
   T? _value;
 
   T get value {
@@ -207,10 +221,24 @@ class AtomElement<T> {
   }
 
   T setValue(T value) {
-    _value = value;
+    if (_value != value) {
+      _value = value;
+
+      for (final dependent in _dependents) {
+        dependent._mount();
+      }
+    }
 
     return value;
   }
+
+  void _mount() {
+    if (_container case final container?) {
+      setValue(atom.factory(container));
+    }
+  }
+
+  void _dependsOn(AtomElement element) => element._dependents.add(this);
 
   @override
   bool operator ==(Object other) =>
