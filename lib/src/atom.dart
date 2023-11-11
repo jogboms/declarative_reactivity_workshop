@@ -109,11 +109,11 @@ final class AtomContainer<U> implements AtomContext<U> {
   }
 
   @override
-  void invalidate<T>(Atom<T> atom) {}
+  void invalidate<T>(Atom<T> atom) => _binding._elements[atom]?._invalidate();
 
   @override
   @internal
-  void invalidateSelf() {}
+  void invalidateSelf() => _owner?._invalidate();
 
   @override
   void onDispose(VoidCallback callback) {}
@@ -240,7 +240,7 @@ class AtomElement<T> {
         listener(previous, value);
       }
       for (final dependent in _dependents) {
-        dependent._mount();
+        dependent._invalidate();
       }
     }
 
@@ -251,6 +251,10 @@ class AtomElement<T> {
     if (_container case final container?) {
       setValue(atom.factory(container));
     }
+  }
+
+  void _invalidate() {
+    _mount();
   }
 
   VoidCallback _addListener(AtomListener<T> listener) {
