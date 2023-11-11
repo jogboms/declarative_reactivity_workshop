@@ -105,7 +105,13 @@ final class AtomContainer<U> implements AtomContext<U> {
   @override
   @internal
   U? mutateSelf(AtomMutation<U?> mutator) {
-    throw UnimplementedError();
+    if (_owner case final element?) {
+      if (mutator(element._value) case final value?) {
+        return element.setValue(value);
+      }
+    }
+
+    return null;
   }
 
   @override
