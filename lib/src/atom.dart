@@ -3,6 +3,8 @@ import 'package:meta/meta.dart';
 typedef VoidCallback = void Function();
 typedef ValueCallback<T> = T Function();
 typedef AtomFactory<T> = T Function(AtomContext<T> context);
+typedef AtomFamily<U, V extends Atom> = V Function(U arg);
+typedef AtomFamilyFactory<T, U> = T Function(AtomContext ref, U arg);
 typedef AtomMutation<T> = T Function(T value);
 typedef AtomListener<T> = void Function(T? previous, T value);
 @optionalTypeArgs
@@ -89,6 +91,18 @@ final class AtomContainer<U> implements AtomContext<U> {
 @optionalTypeArgs
 base class Atom<T> {
   Atom(this.factory, {this.key, this.name});
+
+  /// Creates a new [Atom] with the given [factory] that receives a single argument.
+  static AtomFamily<U, Atom<T>> family<T, U>(
+    AtomFamilyFactory<T, U> factory, {
+    String? name,
+  }) {
+    return (U arg) => Atom(
+          (context) => factory(context, arg),
+          key: Object.hash(arg, T, U),
+          name: name,
+        );
+  }
 
   @internal
   final AtomFactory<T> factory;
