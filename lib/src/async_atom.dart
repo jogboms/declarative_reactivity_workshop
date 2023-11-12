@@ -54,3 +54,29 @@ final class FutureAtom<T> extends Atom<AsyncValue<T>> {
           return value ?? const AsyncLoading();
         });
 }
+
+final class StreamAtom<T> extends Atom<AsyncValue<T>> {
+  StreamAtom(AsyncAtomFactory<T, Stream<T>> factory, {super.key, super.name})
+      : super((context) {
+          final value = context.mutateSelf((value) {
+            if (value?.valueOrNull case final value?) {
+              return AsyncLoading(value);
+            }
+
+            return value;
+          });
+
+          StreamSubscription<T>? sub;
+          context.onDispose(() {
+            sub?.cancel();
+          });
+
+          sub = factory(context).listen((value) {
+            context.mutateSelf(
+              (_) => AsyncData(value),
+            );
+          });
+
+          return value ?? const AsyncLoading();
+        });
+}

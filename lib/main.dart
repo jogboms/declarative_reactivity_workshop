@@ -167,6 +167,33 @@ class _PageState extends State<Page> {
                             error: (error, _) => Text('DelayedByTen: Error: $error'),
                           ),
                     ),
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) => context.get(delayedStream).when(
+                            loading: () => const Text('DelayedStream: Loading..'),
+                            refreshing: (data) => Text('DelayedStream: Refreshing... ($data)'),
+                            data: (data) => Text('DelayedStream: $data'),
+                            error: (error, _) => Text('DelayedStream: Error: $error'),
+                          ),
+                    ),
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) => context.get(delayedStreamByTen).when(
+                            loading: () => const Text('DelayedStreamByTen: Loading..'),
+                            refreshing: (data) => Text('DelayedStreamByTen: Refreshing... ($data)'),
+                            data: (data) => Text('DelayedStreamByTen: $data'),
+                            error: (error, _) => Text('DelayedStreamByTen: Error: $error'),
+                          ),
+                    ),
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) => context.get(delayedStreamCounter).when(
+                            loading: () => const Text('DelayedStreamCounter: Loading..'),
+                            refreshing: (data) => Text('DelayedStreamCounter: Refreshing... ($data)'),
+                            data: (data) => Text('DelayedStreamCounter: $data'),
+                            error: (error, _) => Text('DelayedStreamCounter: Error: $error'),
+                          ),
+                    ),
                   ],
                 ),
               ),
@@ -213,6 +240,21 @@ class _PageState extends State<Page> {
                   TextButton(
                     onPressed: () => context.invalidate(delayedByTen),
                     child: const Text('invalidate delayedByTen'),
+                  ),
+                  spacing,
+                  TextButton(
+                    onPressed: () => context.invalidate(delayedStream),
+                    child: const Text('invalidate delayedStream'),
+                  ),
+                  spacing,
+                  TextButton(
+                    onPressed: () => context.invalidate(delayedStreamByTen),
+                    child: const Text('invalidate delayedStreamByTen'),
+                  ),
+                  spacing,
+                  TextButton(
+                    onPressed: () => context.invalidate(delayedStreamCounter),
+                    child: const Text('invalidate delayedStreamCounter'),
                   ),
                   spacing,
                   const Divider(),
