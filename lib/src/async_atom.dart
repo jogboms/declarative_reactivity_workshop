@@ -5,7 +5,9 @@ import 'atom.dart';
 
 typedef AsyncAtomFactory<T, U> = U Function(AtomContext<AsyncValue<T>> context);
 
+/// A context that can be used to interact with asynchronous [Atom]s.
 extension AsyncAtomContext<U> on AtomContext<U> {
+  /// Returns the resolved value of [atom] as a [Future]. It will trigger a rebuild of itself when the [atom] changes.
   Future<T> async<T>(Atom<AsyncValue<T>> atom) {
     final completer = Completer<T>();
 
@@ -21,6 +23,7 @@ extension AsyncAtomContext<U> on AtomContext<U> {
   }
 }
 
+/// A [Atom] that can be used to represent an asynchronous value.
 final class FutureAtom<T> extends Atom<AsyncValue<T>> {
   FutureAtom(AsyncAtomFactory<T, FutureOr<T>> factory, {super.key, super.name})
       : super((context) {
@@ -55,6 +58,7 @@ final class FutureAtom<T> extends Atom<AsyncValue<T>> {
         });
 }
 
+/// A [Atom] that can be used to represent a stream of values.
 final class StreamAtom<T> extends Atom<AsyncValue<T>> {
   StreamAtom(AsyncAtomFactory<T, Stream<T>> factory, {super.key, super.name})
       : super((context) {
