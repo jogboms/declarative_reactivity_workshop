@@ -4,6 +4,7 @@ import 'async_value.dart';
 import 'atom.dart';
 
 typedef AsyncAtomFactory<T, U> = U Function(AtomContext<AsyncValue<T>> context);
+typedef AsyncAtomFamilyFactory<T, U, V> = U Function(AtomContext<AsyncValue<T>> context, V arg);
 
 /// A context that can be used to interact with asynchronous [Atom]s.
 extension AsyncAtomContext<U> on AtomContext<U> {
@@ -65,6 +66,17 @@ final class FutureAtom<T> extends Atom<AsyncValue<T>> {
 
           return value ?? const AsyncLoading();
         });
+
+  static AtomFamily<U, FutureAtom<T>> family<T, U>(
+    AsyncAtomFamilyFactory<T, Future<T>, U> factory, {
+    String? name,
+  }) {
+    return (U arg) => FutureAtom<T>(
+          (context) => factory(context, arg),
+          key: Object.hash(arg, T, U),
+          name: name,
+        );
+  }
 }
 
 /// A [Atom] that can be used to represent a stream of values.
@@ -96,4 +108,15 @@ final class StreamAtom<T> extends Atom<AsyncValue<T>> {
 
           return value ?? const AsyncLoading();
         });
+
+  static AtomFamily<U, StreamAtom<T>> family<T, U>(
+    AsyncAtomFamilyFactory<T, Stream<T>, U> factory, {
+    String? name,
+  }) {
+    return (U arg) => StreamAtom<T>(
+          (context) => factory(context, arg),
+          key: Object.hash(arg, T, U),
+          name: name,
+        );
+  }
 }
