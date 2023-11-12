@@ -16,6 +16,8 @@ extension AsyncAtomContext<U> on AtomContext<U> {
         invalidateSelf();
       } else if (value case final AsyncData<T> data) {
         completer.complete(data.value);
+      } else if (value case final AsyncError<T> value) {
+        completer.completeError(value.error, value.stackTrace);
       }
     }, fireImmediately: true);
 
@@ -51,6 +53,13 @@ final class FutureAtom<T> extends Atom<AsyncValue<T>> {
                 context.mutateSelf(
                   (_) => AsyncData(value),
                 );
+              }).catchError((Object error, StackTrace stackTrace) {
+                if (disposed) {
+                  return;
+                }
+                context.mutateSelf(
+                  (_) => AsyncError(error, stackTrace),
+                );
               });
           }
 
@@ -79,7 +88,11 @@ final class StreamAtom<T> extends Atom<AsyncValue<T>> {
             context.mutateSelf(
               (_) => AsyncData(value),
             );
-          });
+          }, onError: (Object error, StackTrace stackTrace) {
+            context.mutateSelf(
+              (_) => AsyncError(error, stackTrace),
+            );
+          }, onDone: () => sub?.cancel());
 
           return value ?? const AsyncLoading();
         });
