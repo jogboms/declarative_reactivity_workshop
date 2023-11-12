@@ -18,6 +18,9 @@ mixin AtomWidgetMixin<T extends StatefulWidget> on State<T> {
   AtomContainer get container;
 
   late final _subscriptions = <BuildContext, Set<AtomSubscription>>{};
+  late final _contextsForBuild = <BuildContext>{};
+
+  Completer<void>? _buildTaskCompleter;
 
   void _scheduleListenersCleanupFor(BuildContext context) {
     scheduleMicrotask(() {
@@ -27,11 +30,44 @@ mixin AtomWidgetMixin<T extends StatefulWidget> on State<T> {
     });
   }
 
+  void _scheduleBuildFor(BuildContext context) {
+    _contextsForBuild.add(context);
+
+    _scheduleBuildTask(() {
+      for (final context in _contextsForBuild.toList(growable: false)) {
+        if (context case final Element element when element.debugIsActive) {
+          element.markNeedsBuild();
+        } else {
+          _scheduleListenersCleanupFor(context);
+        }
+        _contextsForBuild.remove(context);
+      }
+    });
+  }
+
+  void _scheduleBuildTask(VoidCallback task) {
+    if (_buildTaskCompleter != null) {
+      return;
+    }
+
+    _buildTaskCompleter = Completer();
+    Future(() {
+      if (_buildTaskCompleter != null) {
+        task();
+        _buildTaskCompleter?.complete();
+        _buildTaskCompleter = null;
+      }
+    });
+  }
+
   @override
   void dispose() {
     for (final context in _subscriptions.keys) {
       _scheduleListenersCleanupFor(context);
     }
+    _buildTaskCompleter?.complete();
+    _buildTaskCompleter = null;
+    _contextsForBuild.clear();
     super.dispose();
   }
 }
@@ -104,13 +140,7 @@ extension AtomWidgetContext on BuildContext {
   }) {
     final state = AtomWidgetMixin.of(this);
     if (rebuildOnChange) {
-      listen(atom, (_, __) {
-        if (this case final Element element when element.debugIsActive) {
-          element.markNeedsBuild();
-        } else {
-          state._scheduleListenersCleanupFor(this);
-        }
-      });
+      listen(atom, (_, __) => state._scheduleBuildFor(this));
     }
 
     return state.container.get(atom, rebuildOnChange: false);
