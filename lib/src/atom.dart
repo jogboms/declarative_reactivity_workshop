@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 
 typedef VoidCallback = void Function();
@@ -121,7 +123,11 @@ final class AtomContainer<U> implements AtomContext<U> {
 
   @override
   @internal
-  void invalidateSelf() => _owner?._invalidate();
+  void invalidateSelf() {
+    if (_owner case final element?) {
+      element._invalidate(schedule: true);
+    }
+  }
 
   @override
   void onDispose(VoidCallback callback) {
@@ -247,11 +253,17 @@ class AtomElement<T> {
   final Set<AtomListener<T>> _listeners = {};
   final Set<AtomElement> _dependents = {};
 
+  bool get isActive => _listeners.isNotEmpty || _dependents.isNotEmpty;
+
   AtomContainer<T>? _container;
   VoidCallback? _disposeCallback;
+  AtomElementState? _state = AtomElementState.idle;
   T? _value;
 
   T get value {
+    if (_state == AtomElementState.stale) {
+      _mount();
+    }
     if (_value case final value?) {
       return value;
     }
@@ -268,7 +280,7 @@ class AtomElement<T> {
         listener(previous, value);
       }
       for (final dependent in _dependents) {
-        dependent._invalidate();
+        dependent._invalidate(schedule: true);
       }
     }
 
@@ -278,12 +290,34 @@ class AtomElement<T> {
   void _mount() {
     if (_container case final container?) {
       setValue(atom.factory(container));
+      _state = AtomElementState.active;
     }
   }
 
-  void _invalidate() {
+  void _maybeMount() {
+    switch (_state) {
+      case AtomElementState.stale when _value != null && isActive:
+        _mount();
+      case AtomElementState.disposed:
+        _state = null;
+      case _:
+        break;
+    }
+  }
+
+  void _invalidate({bool schedule = false}) {
+    if (_state == AtomElementState.stale) {
+      return;
+    }
+
     _runDispose();
-    _mount();
+
+    _state = AtomElementState.stale;
+    if (!schedule) {
+      return _maybeMount();
+    }
+
+    scheduleMicrotask(_maybeMount);
   }
 
   VoidCallback _addListener(AtomListener<T> listener) {
@@ -301,6 +335,7 @@ class AtomElement<T> {
 
   void _dispose() {
     _runDispose();
+    _state = AtomElementState.disposed;
     _value = null;
     _container = null;
     _listeners.clear();
