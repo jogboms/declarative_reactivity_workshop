@@ -78,7 +78,7 @@ final class AtomContainer<U> implements AtomContext<U> {
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    return _resolve(atom, track: rebuildOnChange).value;
+    return _resolve(atom, mount: true, track: rebuildOnChange).value;
   }
 
   @override
@@ -90,8 +90,16 @@ final class AtomContainer<U> implements AtomContext<U> {
     final element = _resolve(atom);
     final cancel = element._addListener(listener);
 
-    if (fireImmediately) {
-      listener(null, element.value);
+    switch ((fireImmediately, element._state)) {
+      case (true, AtomElementState.idle):
+        element._mount();
+        listener(null, element.value);
+      case (false, AtomElementState.idle):
+        element._mount();
+      case (true, _):
+        listener(null, element.value);
+      case _:
+        break;
     }
 
     return (
@@ -102,7 +110,7 @@ final class AtomContainer<U> implements AtomContext<U> {
 
   @override
   T mutate<T>(Atom<T> atom, AtomMutation<T> mutator) {
-    final element = _resolve(atom);
+    final element = _resolve(atom, mount: true);
     return element.setValue(mutator(element.value));
   }
 
@@ -155,6 +163,7 @@ final class AtomContainer<U> implements AtomContext<U> {
 
   AtomElement<T> _resolve<T>(
     Atom<T> atom, {
+    bool mount = false,
     bool track = false,
   }) {
     switch (_binding._elements[atom]) {
@@ -173,7 +182,11 @@ final class AtomContainer<U> implements AtomContext<U> {
           _owner?._dependsOn(element);
         }
 
-        return element.._mount();
+        if (mount) {
+          element._mount();
+        }
+
+        return element;
     }
   }
 }
@@ -272,6 +285,10 @@ class AtomElement<T> {
   }
 
   T setValue(T value) {
+    if (_state == AtomElementState.idle) {
+      return _value = value;
+    }
+
     if (_value != value) {
       final previous = _value;
       _value = value;
