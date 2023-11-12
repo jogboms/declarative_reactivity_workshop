@@ -32,11 +32,19 @@ final class FutureAtom<T> extends Atom<AsyncValue<T>> {
             return value;
           });
 
+          bool disposed = false;
+          context.onDispose(() {
+            disposed = true;
+          });
+
           switch (factory(context)) {
             case T value:
               return AsyncData(value);
             case Future<T> future:
               future.then((value) {
+                if (disposed) {
+                  return;
+                }
                 context.mutateSelf(
                   (_) => AsyncData(value),
                 );
