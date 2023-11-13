@@ -32,6 +32,11 @@ final delayedStreamCounter = StreamAtom((context) async* {
   );
 });
 
+final delayedByStream = FutureAtom((context) async {
+  await Future.delayed(const Duration(milliseconds: 300));
+  return await context.async(delayedStreamCounter);
+});
+
 Stream<int> _countGenerator() {
   return Stream.periodic(
     const Duration(seconds: 1),

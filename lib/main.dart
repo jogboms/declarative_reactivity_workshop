@@ -207,6 +207,15 @@ class _PageState extends State<Page> {
                             );
                       },
                     ),
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) => context.get(delayedByStream).when(
+                            loading: () => const Text('DelayedByStream: Loading..'),
+                            refreshing: (data) => Text('DelayedByStream: Refreshing... ($data)'),
+                            data: (data) => Text('DelayedByStream: $data'),
+                            error: (error, _) => Text('DelayedByStream: Error: $error'),
+                          ),
+                    ),
                   ],
                 ),
               ),
@@ -268,6 +277,11 @@ class _PageState extends State<Page> {
                   TextButton(
                     onPressed: () => context.invalidate(delayedStreamCounter),
                     child: const Text('invalidate delayedStreamCounter'),
+                  ),
+                  spacing,
+                  TextButton(
+                    onPressed: () => context.invalidate(delayedByStream),
+                    child: const Text('invalidate delayedByStream'),
                   ),
                   spacing,
                   const Divider(),
