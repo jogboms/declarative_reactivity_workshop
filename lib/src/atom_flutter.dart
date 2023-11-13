@@ -29,6 +29,35 @@ class _AtomWidgetMixinMarker extends InheritedWidget {
   bool updateShouldNotify(_AtomWidgetMixinMarker old) => old.state.container != state.container;
 }
 
+class AtomScope extends StatefulWidget {
+  const AtomScope({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<AtomScope> createState() => _AtomScopeState();
+}
+
+class _AtomScopeState extends State<AtomScope> with AtomWidgetMixin {
+  @override
+  late final container = AtomContainer();
+
+  @override
+  void dispose() {
+    container.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _AtomWidgetMixinMarker(
+      key: ObjectKey(container),
+      state: this,
+      child: widget.child,
+    );
+  }
+}
+
 extension AtomWidgetContext on BuildContext {
   /// Returns the current value of [atom]. If [rebuildOnChange] is true, it will rebuild itself when the [atom] changes.
   T get<T>(
