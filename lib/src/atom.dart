@@ -89,6 +89,7 @@ final class AtomContainer<U> implements AtomContext<U> {
   }) {
     final element = _resolve(atom);
     final cancel = element._addListener(listener);
+    _owner?._subscriptionCallback += cancel;
 
     switch ((fireImmediately, element._state)) {
       case (true, AtomElementState.idle):
@@ -168,19 +169,14 @@ final class AtomContainer<U> implements AtomContext<U> {
   }) {
     switch (_binding._elements[atom]) {
       case AtomElement<T> element:
-        if (track) {
-          _owner?._dependsOn(element);
-        }
+        _owner?._attachDependency(element, track: track);
         return element;
       case _:
         final element = atom.createElement();
         final container = AtomContainer(owner: element, parent: this);
 
         _binding._elements[atom] = element.._container = container;
-
-        if (track) {
-          _owner?._dependsOn(element);
-        }
+        _owner?._attachDependency(element, track: track);
 
         if (mount) {
           element._mount();
@@ -265,10 +261,12 @@ class AtomElement<T> {
   final Atom<T> atom;
   final Set<AtomListener<T>> _listeners = {};
   final Set<AtomElement> _dependents = {};
+  final Set<AtomElement> _dependencies = {};
 
   bool get isActive => _listeners.isNotEmpty || _dependents.isNotEmpty;
 
   AtomContainer<T>? _container;
+  VoidCallback? _subscriptionCallback;
   VoidCallback? _disposeCallback;
   AtomElementState? _state = AtomElementState.idle;
   T? _value;
@@ -306,6 +304,7 @@ class AtomElement<T> {
 
   void _mount() {
     if (_container case final container?) {
+      _detachDependencies();
       setValue(atom.factory(container));
       _state = AtomElementState.active;
     }
@@ -342,7 +341,22 @@ class AtomElement<T> {
     return () => _listeners.remove(listener);
   }
 
-  void _dependsOn(AtomElement element) => element._dependents.add(this);
+  void _attachDependency(AtomElement element, {bool track = false}) {
+    if (track) {
+      element._dependents.add(this);
+    }
+    _dependencies.add(element);
+  }
+
+  void _detachDependencies() {
+    for (final element in _dependencies.toList(growable: false)) {
+      element._dependents.remove(this);
+    }
+
+    final previousCallback = _subscriptionCallback;
+    _subscriptionCallback = null;
+    previousCallback?.call();
+  }
 
   void _runDispose() {
     final previousCallback = _disposeCallback;
@@ -352,11 +366,13 @@ class AtomElement<T> {
 
   void _dispose() {
     _runDispose();
+    _detachDependencies();
     _state = AtomElementState.disposed;
     _value = null;
     _container = null;
     _listeners.clear();
     _dependents.clear();
+    _dependencies.clear();
   }
 
   @override
