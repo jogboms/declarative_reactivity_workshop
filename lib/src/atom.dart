@@ -135,6 +135,7 @@ final class AtomContainer<U> implements AtomContext<U> {
   void invalidateSelf() {
     if (_owner case final element?) {
       element._invalidate(schedule: true);
+      scheduleMicrotask(element._maybeMount);
     }
   }
 
@@ -297,6 +298,9 @@ class AtomElement<T> {
       for (final dependent in _dependents) {
         dependent._invalidate(schedule: true);
       }
+      for (final dependent in _dependents.toList(growable: false)) {
+        dependent._maybeMount();
+      }
     }
 
     return value;
@@ -322,18 +326,22 @@ class AtomElement<T> {
   }
 
   void _invalidate({bool schedule = false}) {
-    if (_state == AtomElementState.stale) {
-      return;
+    switch (_state) {
+      case AtomElementState.active:
+        _state = AtomElementState.stale;
+      case _:
+        return;
     }
 
     _runDispose();
 
-    _state = AtomElementState.stale;
     if (!schedule) {
       return _maybeMount();
     }
 
-    scheduleMicrotask(_maybeMount);
+    for (final dependent in _dependents) {
+      dependent._invalidate(schedule: true);
+    }
   }
 
   VoidCallback _addListener(AtomListener<T> listener) {
