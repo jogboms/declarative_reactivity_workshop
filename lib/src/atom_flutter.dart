@@ -6,7 +6,27 @@ import 'atom.dart';
 @optionalTypeArgs
 mixin AtomWidgetMixin<T extends StatefulWidget> on State<T> {
   @internal
+  static AtomWidgetMixin of(BuildContext context) {
+    final result = context.getInheritedWidgetOfExactType<_AtomWidgetMixinMarker>();
+    assert(result != null, 'No AtomScope found in context');
+    return result!.state;
+  }
+
+  @internal
   AtomContainer get container;
+}
+
+class _AtomWidgetMixinMarker extends InheritedWidget {
+  const _AtomWidgetMixinMarker({
+    super.key,
+    required this.state,
+    required super.child,
+  });
+
+  final AtomWidgetMixin state;
+
+  @override
+  bool updateShouldNotify(_AtomWidgetMixinMarker old) => old.state.container != state.container;
 }
 
 extension AtomWidgetContext on BuildContext {
