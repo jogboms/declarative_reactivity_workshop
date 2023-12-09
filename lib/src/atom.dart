@@ -400,3 +400,56 @@ extension on VoidCallback? {
         other();
       };
 }
+
+class AtomGraphNode {
+  const AtomGraphNode(this.id, this.source, this.data);
+
+  final String id;
+  final bool source;
+  final Object? data;
+
+  @override
+  bool operator ==(Object other) => other is AtomGraphNode && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() => '<$id($source): $data>';
+}
+
+typedef AtomGraph = Map<AtomGraphNode, List<AtomGraphNode>>;
+
+extension AtomGraphBuilder<U> on AtomContainer<U> {
+  void _addEdgeTo(AtomGraph graph, AtomGraphNode source, AtomGraphNode destination) {
+    graph.update(
+      source,
+      (value) => value..add(destination),
+      ifAbsent: () => [destination],
+    );
+  }
+
+  AtomGraphNode _nodeFor(AtomElement element) {
+    return AtomGraphNode(
+      element.atom.name ?? element.atom.toString(),
+      element._dependencies.isEmpty,
+      element._value,
+    );
+  }
+
+  AtomGraph graph() {
+    final graph = <AtomGraphNode, List<AtomGraphNode>>{};
+    const node = AtomGraphNode('container', true, null);
+    for (final element in _binding._elements.values) {
+      final edgeNode = _nodeFor(element);
+      if (element._dependencies.isEmpty) {
+        _addEdgeTo(graph, node, edgeNode);
+      } else {
+        for (final dep in element._dependencies) {
+          _addEdgeTo(graph, _nodeFor(dep), edgeNode);
+        }
+      }
+    }
+    return graph;
+  }
+}
