@@ -67,6 +67,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  force_directed_graphview:
+    dependency: "direct main"
+    description:
+      name: force_directed_graphview
+      sha256: "24355c6d9a259b9a9e933eeabad1d73067a22869f56648b76456a36922e3711b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.1"
   lints:
     dependency: transitive
     description:
@@ -178,3 +186,4 @@ packages:
     version: "0.1.4-beta"
 sdks:
   dart: ">=3.1.0 <4.0.0"
+  flutter: ">=3.10.0"

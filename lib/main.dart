@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'async_state.dart';
+import 'graph_page.dart';
 import 'log.dart';
 import 'src/async_atom.dart';
 import 'src/atom.dart';
@@ -308,6 +309,14 @@ class _PageState extends State<Page> {
           ),
         ),
       ),
+      floatingActionButton: Builder(builder: (context) {
+        return FloatingActionButton(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const GraphPage()),
+          ),
+          child: const Icon(Icons.graphic_eq),
+        );
+      }),
     );
   }
 }
