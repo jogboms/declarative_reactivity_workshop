@@ -51,11 +51,15 @@ mixin AtomContext<U> {
 final class AtomBinding {
   AtomBinding._({
     Map<Atom, AtomElement>? elements,
-  }) : _elements = elements ?? {};
+    AtomScheduler? scheduler,
+  })  : _elements = elements ?? {},
+        _scheduler = scheduler ?? AtomScheduler();
 
   final Map<Atom, AtomElement> _elements;
+  final AtomScheduler _scheduler;
 
   void dispose() {
+    _scheduler._dispose();
     _elements.clear();
   }
 }
@@ -105,7 +109,10 @@ final class AtomContainer<U> implements AtomContext<U> {
 
     return (
       get: () => element.value,
-      cancel: cancel,
+      cancel: () {
+        cancel();
+        _scheduleDisposeFor(element);
+      },
     );
   }
 
@@ -186,6 +193,10 @@ final class AtomContainer<U> implements AtomContext<U> {
         return element;
     }
   }
+
+  void _scheduleDisposeFor(AtomElement element) => _binding._scheduler._scheduleDisposeFor(element);
+
+  void _remove(Atom atom) => _binding._elements.remove(atom);
 }
 
 /// A [Atom] that can be used to store a value.
@@ -369,6 +380,17 @@ class AtomElement<T> {
     previousCallback?.call();
   }
 
+  void _maybeDispose() {
+    if (_container case final container? when !isActive) {
+      for (final element in _dependencies) {
+        container._scheduleDisposeFor(element);
+      }
+
+      _dispose();
+      container._remove(atom);
+    }
+  }
+
   void _runDispose() {
     final previousCallback = _disposeCallback;
     _disposeCallback = null;
@@ -395,6 +417,50 @@ class AtomElement<T> {
 
   @override
   String toString() => 'AtomElement<${atom.name ?? T}>($hashCode)';
+}
+
+@internal
+final class AtomScheduler {
+  final _elementsForDispose = <AtomElement>{};
+  Completer<void>? _completer;
+
+  void _scheduleDisposeFor(AtomElement element) {
+    _elementsForDispose.add(element);
+    _scheduleTask(_disposeTask);
+  }
+
+  bool _disposeTask() {
+    for (final element in _elementsForDispose.toList(growable: false)) {
+      element._maybeDispose();
+      _elementsForDispose.remove(element);
+    }
+    return _elementsForDispose.isNotEmpty;
+  }
+
+  void _scheduleTask(ValueCallback<bool> task) {
+    if (_completer != null) {
+      return;
+    }
+
+    _completer = Completer<void>();
+    scheduleMicrotask(() {
+      if (_completer case final completer?) {
+        completer.complete();
+        final reschedule = task();
+        _completer = null;
+
+        if (reschedule) {
+          _scheduleTask(task);
+        }
+      }
+    });
+  }
+
+  void _dispose() {
+    _elementsForDispose.clear();
+    _completer?.complete();
+    _completer = null;
+  }
 }
 
 extension on VoidCallback? {
