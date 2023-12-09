@@ -308,6 +308,9 @@ class AtomElement<T> {
 
   void _mount() {
     if (_container case final container?) {
+      if (_state != AtomElementState.idle) {
+        _state = AtomElementState.mounting;
+      }
       _detachDependencies();
       setValue(atom.factory(container));
       _state = AtomElementState.active;
@@ -327,7 +330,7 @@ class AtomElement<T> {
 
   void _invalidate({bool schedule = false}) {
     switch (_state) {
-      case AtomElementState.active:
+      case AtomElementState.active || AtomElementState.mounting:
         _state = AtomElementState.stale;
       case _:
         return;
