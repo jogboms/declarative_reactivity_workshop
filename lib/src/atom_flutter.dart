@@ -123,11 +123,17 @@ class AtomBuilder extends StatefulWidget {
   State<AtomBuilder> createState() => _AtomBuilderState();
 }
 
-class _AtomBuilderState extends State<AtomBuilder> {
+class _AtomBuilderState extends State<AtomBuilder> with AtomWidgetMixin {
+  @override
+  late final container = AtomWidgetMixin.of(context).container;
+
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (context) => widget.builder(context),
+    return _AtomWidgetMixinMarker(
+      state: this,
+      child: Builder(
+        builder: (context) => widget.builder(context),
+      ),
     );
   }
 }
