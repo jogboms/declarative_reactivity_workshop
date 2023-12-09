@@ -58,6 +58,24 @@ class _AtomScopeState extends State<AtomScope> with AtomWidgetMixin {
   }
 }
 
+class AtomBuilder extends StatefulWidget {
+  const AtomBuilder({super.key, required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  State<AtomBuilder> createState() => _AtomBuilderState();
+}
+
+class _AtomBuilderState extends State<AtomBuilder> {
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (context) => widget.builder(context),
+    );
+  }
+}
+
 extension AtomWidgetContext on BuildContext {
   /// Returns the current value of [atom]. If [rebuildOnChange] is true, it will rebuild itself when the [atom] changes.
   T get<T>(
