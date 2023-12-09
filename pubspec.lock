@@ -67,6 +67,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  force_directed_graphview:
+    dependency: "direct main"
+    description:
+      name: force_directed_graphview
+      sha256: "7759f06537e5d42021c4f17b99b717420897809a0eb044f7c3f1456a532e0d0f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.2"
   leak_tracker:
     dependency: transitive
     description:
