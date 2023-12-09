@@ -1,6 +1,13 @@
 import 'package:flutter/widgets.dart';
+import 'package:meta/meta.dart';
 
 import 'atom.dart';
+
+@optionalTypeArgs
+mixin AtomWidgetMixin<T extends StatefulWidget> on State<T> {
+  @internal
+  AtomContainer get container;
+}
 
 extension AtomWidgetContext on BuildContext {
   /// Returns the current value of [atom]. If [rebuildOnChange] is true, it will rebuild itself when the [atom] changes.
