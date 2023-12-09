@@ -46,6 +46,7 @@ class Page extends StatefulWidget {
 class _PageState extends State<Page> {
   AtomSubscription<double>? _doubleAgeSub;
   bool _showSelectors = false;
+  bool _showAsync = false;
 
   @override
   void initState() {
@@ -159,72 +160,74 @@ class _PageState extends State<Page> {
                         },
                       ),
                     ],
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) => context.get(delayed).when(
-                            loading: () => const Text('Delayed: Loading..'),
-                            refreshing: (data) => Text('Delayed: Refreshing... ($data)'),
-                            data: (data) => Text('Delayed: $data'),
-                            error: (error, _) => Text('Delayed: Error: $error'),
-                          ),
-                    ),
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) => context.get(delayedByTen).when(
-                            loading: () => const Text('DelayedByTen: Loading..'),
-                            refreshing: (data) => Text('DelayedByTen: Refreshing... ($data)'),
-                            data: (data) => Text('DelayedByTen: $data'),
-                            error: (error, _) => Text('DelayedByTen: Error: $error'),
-                          ),
-                    ),
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) => context.get(delayedStream).when(
-                            loading: () => const Text('DelayedStream: Loading..'),
-                            refreshing: (data) => Text('DelayedStream: Refreshing... ($data)'),
-                            data: (data) => Text('DelayedStream: $data'),
-                            error: (error, _) => Text('DelayedStream: Error: $error'),
-                          ),
-                    ),
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) => context.get(delayedStreamByTen).when(
-                            loading: () => const Text('DelayedStreamByTen: Loading..'),
-                            refreshing: (data) => Text('DelayedStreamByTen: Refreshing... ($data)'),
-                            data: (data) => Text('DelayedStreamByTen: $data'),
-                            error: (error, _) => Text('DelayedStreamByTen: Error: $error'),
-                          ),
-                    ),
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) => context.get(delayedStreamCounter).when(
-                            loading: () => const Text('DelayedStreamCounter: Loading..'),
-                            refreshing: (data) => Text('DelayedStreamCounter: Refreshing... ($data)'),
-                            data: (data) => Text('DelayedStreamCounter: $data'),
-                            error: (error, _) => Text('DelayedStreamCounter: Error: $error'),
-                          ),
-                    ),
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) {
-                        log('rebuild', 'delayed-stream-counter-modulo-selector');
-                        return context.get(delayedStreamCounter.selectAsync((value) => value % 5 == 0)).when(
-                              loading: () => const Text('DelayedStreamCounter % 5 == 0: Loading..'),
-                              refreshing: (data) => Text('DelayedStreamCounter % 5 == 0: Refreshing... ($data)'),
-                              data: (data) => Text('DelayedStreamCounter % 5 == 0: $data'),
-                              error: (error, _) => Text('DelayedStreamCounter % 5 == 0: Error: $error'),
-                            );
-                      },
-                    ),
-                    spacing,
-                    AtomBuilder(
-                      builder: (context) => context.get(delayedByStream).when(
-                            loading: () => const Text('DelayedByStream: Loading..'),
-                            refreshing: (data) => Text('DelayedByStream: Refreshing... ($data)'),
-                            data: (data) => Text('DelayedByStream: $data'),
-                            error: (error, _) => Text('DelayedByStream: Error: $error'),
-                          ),
-                    ),
+                    if (_showAsync) ...[
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) => context.get(delayed).when(
+                              loading: () => const Text('Delayed: Loading..'),
+                              refreshing: (data) => Text('Delayed: Refreshing... ($data)'),
+                              data: (data) => Text('Delayed: $data'),
+                              error: (error, _) => Text('Delayed: Error: $error'),
+                            ),
+                      ),
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) => context.get(delayedByTen).when(
+                              loading: () => const Text('DelayedByTen: Loading..'),
+                              refreshing: (data) => Text('DelayedByTen: Refreshing... ($data)'),
+                              data: (data) => Text('DelayedByTen: $data'),
+                              error: (error, _) => Text('DelayedByTen: Error: $error'),
+                            ),
+                      ),
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) => context.get(delayedStream).when(
+                              loading: () => const Text('DelayedStream: Loading..'),
+                              refreshing: (data) => Text('DelayedStream: Refreshing... ($data)'),
+                              data: (data) => Text('DelayedStream: $data'),
+                              error: (error, _) => Text('DelayedStream: Error: $error'),
+                            ),
+                      ),
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) => context.get(delayedStreamByTen).when(
+                              loading: () => const Text('DelayedStreamByTen: Loading..'),
+                              refreshing: (data) => Text('DelayedStreamByTen: Refreshing... ($data)'),
+                              data: (data) => Text('DelayedStreamByTen: $data'),
+                              error: (error, _) => Text('DelayedStreamByTen: Error: $error'),
+                            ),
+                      ),
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) => context.get(delayedStreamCounter).when(
+                              loading: () => const Text('DelayedStreamCounter: Loading..'),
+                              refreshing: (data) => Text('DelayedStreamCounter: Refreshing... ($data)'),
+                              data: (data) => Text('DelayedStreamCounter: $data'),
+                              error: (error, _) => Text('DelayedStreamCounter: Error: $error'),
+                            ),
+                      ),
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) {
+                          log('rebuild', 'delayed-stream-counter-modulo-selector');
+                          return context.get(delayedStreamCounter.selectAsync((value) => value % 5 == 0)).when(
+                                loading: () => const Text('DelayedStreamCounter % 5 == 0: Loading..'),
+                                refreshing: (data) => Text('DelayedStreamCounter % 5 == 0: Refreshing... ($data)'),
+                                data: (data) => Text('DelayedStreamCounter % 5 == 0: $data'),
+                                error: (error, _) => Text('DelayedStreamCounter % 5 == 0: Error: $error'),
+                              );
+                        },
+                      ),
+                      spacing,
+                      AtomBuilder(
+                        builder: (context) => context.get(delayedByStream).when(
+                              loading: () => const Text('DelayedByStream: Loading..'),
+                              refreshing: (data) => Text('DelayedByStream: Refreshing... ($data)'),
+                              data: (data) => Text('DelayedByStream: $data'),
+                              error: (error, _) => Text('DelayedByStream: Error: $error'),
+                            ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -262,36 +265,38 @@ class _PageState extends State<Page> {
                     onPressed: () => context.invalidate(counter),
                     child: const Text('invalidate counter'),
                   ),
-                  spacing,
-                  TextButton(
-                    onPressed: () => context.invalidate(delayed),
-                    child: const Text('invalidate delayed'),
-                  ),
-                  spacing,
-                  TextButton(
-                    onPressed: () => context.invalidate(delayedByTen),
-                    child: const Text('invalidate delayedByTen'),
-                  ),
-                  spacing,
-                  TextButton(
-                    onPressed: () => context.invalidate(delayedStream),
-                    child: const Text('invalidate delayedStream'),
-                  ),
-                  spacing,
-                  TextButton(
-                    onPressed: () => context.invalidate(delayedStreamByTen),
-                    child: const Text('invalidate delayedStreamByTen'),
-                  ),
-                  spacing,
-                  TextButton(
-                    onPressed: () => context.invalidate(delayedStreamCounter),
-                    child: const Text('invalidate delayedStreamCounter'),
-                  ),
-                  spacing,
-                  TextButton(
-                    onPressed: () => context.invalidate(delayedByStream),
-                    child: const Text('invalidate delayedByStream'),
-                  ),
+                  if (_showAsync) ...[
+                    spacing,
+                    TextButton(
+                      onPressed: () => context.invalidate(delayed),
+                      child: const Text('invalidate delayed'),
+                    ),
+                    spacing,
+                    TextButton(
+                      onPressed: () => context.invalidate(delayedByTen),
+                      child: const Text('invalidate delayedByTen'),
+                    ),
+                    spacing,
+                    TextButton(
+                      onPressed: () => context.invalidate(delayedStream),
+                      child: const Text('invalidate delayedStream'),
+                    ),
+                    spacing,
+                    TextButton(
+                      onPressed: () => context.invalidate(delayedStreamByTen),
+                      child: const Text('invalidate delayedStreamByTen'),
+                    ),
+                    spacing,
+                    TextButton(
+                      onPressed: () => context.invalidate(delayedStreamCounter),
+                      child: const Text('invalidate delayedStreamCounter'),
+                    ),
+                    spacing,
+                    TextButton(
+                      onPressed: () => context.invalidate(delayedByStream),
+                      child: const Text('invalidate delayedByStream'),
+                    ),
+                  ],
                   spacing,
                   const Divider(),
                   spacing,
@@ -301,6 +306,15 @@ class _PageState extends State<Page> {
                       value: _showSelectors,
                       title: const Text('Show Selectors?'),
                       onChanged: (value) => setState(() => _showSelectors = value == true),
+                    ),
+                  ),
+                  spacing,
+                  SizedBox(
+                    width: 300,
+                    child: CheckboxListTile.adaptive(
+                      value: _showAsync,
+                      title: const Text('Show Async?'),
+                      onChanged: (value) => setState(() => _showAsync = value == true),
                     ),
                   ),
                 ],
