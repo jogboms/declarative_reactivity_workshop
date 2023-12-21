@@ -6,6 +6,7 @@ typedef AtomFactory<T> = T Function(AtomContext<T> context);
 typedef AtomFamily<U, V extends Atom> = V Function(U arg);
 typedef AtomFamilyFactory<T, U> = T Function(AtomContext ref, U arg);
 typedef AtomMutation<T> = T Function(T value);
+typedef AtomSelector<T, U> = U Function(T value);
 typedef AtomListener<T> = void Function(T? previous, T value);
 @optionalTypeArgs
 typedef AtomSubscription<T> = ({ValueCallback<T> get, VoidCallback cancel});
@@ -115,6 +116,14 @@ base class Atom<T> {
 
   @internal
   AtomElement<T> createElement() => AtomElement<T>(this);
+
+  Atom<U> select<U>(AtomSelector<T, U> selector, {String? key, String? name}) {
+    return Atom(
+      (context) => selector(context.get(this)),
+      key: key,
+      name: name,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
