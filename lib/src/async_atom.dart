@@ -28,6 +28,22 @@ extension AsyncAtomContext<U> on AtomContext<U> {
   }
 }
 
+/// A selector that can be used to select a value from an [AsyncValue].
+extension AsyncAtomSelector<T> on Atom<AsyncValue<T>> {
+  Atom<AsyncValue<U>> selectAsync<U>(AtomSelector<T, U> selector, {String? key, String? name}) {
+    return Atom(
+      (context) => context.get(this).when(
+            loading: () => const AsyncLoading(),
+            refreshing: (value) => AsyncLoading(selector(value)),
+            data: (value) => AsyncData(selector(value)),
+            error: AsyncError.new,
+          ),
+      key: key,
+      name: name,
+    );
+  }
+}
+
 /// A [Atom] that can be used to represent an asynchronous value.
 final class FutureAtom<T> extends Atom<AsyncValue<T>> {
   FutureAtom(AsyncAtomFactory<T, FutureOr<T>> factory, {super.key, super.name})

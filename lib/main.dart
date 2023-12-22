@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'async_state.dart';
 import 'log.dart';
+import 'src/async_atom.dart';
 import 'src/atom.dart';
 import 'src/atom_flutter.dart';
 import 'state.dart';
@@ -193,6 +194,18 @@ class _PageState extends State<Page> {
                             data: (data) => Text('DelayedStreamCounter: $data'),
                             error: (error, _) => Text('DelayedStreamCounter: Error: $error'),
                           ),
+                    ),
+                    spacing,
+                    AtomBuilder(
+                      builder: (context) {
+                        log('rebuild', 'delayed-stream-counter-modulo-selector');
+                        return context.get(delayedStreamCounter.selectAsync((value) => value % 5 == 0)).when(
+                              loading: () => const Text('DelayedStreamCounter % 5 == 0: Loading..'),
+                              refreshing: (data) => Text('DelayedStreamCounter % 5 == 0: Refreshing... ($data)'),
+                              data: (data) => Text('DelayedStreamCounter % 5 == 0: $data'),
+                              error: (error, _) => Text('DelayedStreamCounter % 5 == 0: Error: $error'),
+                            );
+                      },
                     ),
                   ],
                 ),
