@@ -9,7 +9,9 @@ typedef AsyncAtomFamilyFactory<T, U, V> = U Function(AtomContext<AsyncValue<T>> 
 /// A context that can be used to interact with asynchronous [Atom]s.
 extension AsyncAtomContext<U> on AtomContext<U> {
   /// Returns the resolved value of [atom] as a [Future]. It will trigger a rebuild of itself when the [atom] changes.
-  Future<T> async<T>(Atom<AsyncValue<T>> atom) {
+  Future<T> async<T>(Atom<AsyncValue<T>> atom) async {
+    await Future<void>.value();
+
     final completer = Completer<T>();
 
     listen(atom, (_, value) {
