@@ -8,9 +8,8 @@ like [MobX](https://mobx.js.org/the-gist-of-mobx.html), [Solid-js's Signals](htt
 API](https://vuejs.org/guide/introduction.html), [React's Recoil-js](https://recoiljs.org/docs/introduction/core-concepts)
 and more recently [Svelte's Runes](https://svelte.dev/blog/runes).
 
-This is a very simplified version of a reactivity system with a couple of missing features like a more robust error
-handling system, updates batching, to mention a few, but it
-will help you understand how a basic reactivity system works internally.
+This is a very simplified version of a reactivity system with a couple of missing features. Most-notable a robust 
+error handling system. But it will help you understand how a basic reactivity system works internally.
 
 This workshop is also not meant to teach you how to use Riverpod, it is actually only mentioned as a more robust
 implementation with a familiar API but rather how to implement a similar system from scratch without all the bells and
