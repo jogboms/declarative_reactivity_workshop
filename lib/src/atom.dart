@@ -45,25 +45,38 @@ mixin AtomContext<U> {
   void onDispose(VoidCallback callback);
 }
 
+@internal
+final class AtomBinding {
+  AtomBinding._({
+    Map<Atom, AtomElement>? elements,
+  }) : _elements = elements ?? {};
+
+  final Map<Atom, AtomElement> _elements;
+
+  void dispose() {
+    _elements.clear();
+  }
+}
+
 @optionalTypeArgs
 final class AtomContainer<U> implements AtomContext<U> {
   AtomContainer({
     AtomContainer? parent,
-  }) : _elements = parent?._elements ?? {};
+  }) : _binding = parent?._binding ?? AtomBinding._();
 
-  final Map<Atom, AtomElement> _elements;
+  final AtomBinding _binding;
 
   @override
   T get<T>(
     Atom<T> atom, {
     bool rebuildOnChange = true,
   }) {
-    switch (_elements[atom]) {
+    switch (_binding._elements[atom]) {
       case AtomElement<T> element:
         return element.value;
       case _:
         final element = atom.createElement();
-        _elements[atom] = element;
+        _binding._elements[atom] = element;
         final value = atom.factory(
           AtomContainer(parent: this),
         );
