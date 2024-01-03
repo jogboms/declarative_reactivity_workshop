@@ -179,4 +179,7 @@ extension AtomWidgetContext on BuildContext {
 
   /// Invalidates [atom] so that it will rebuild.
   void invalidate<T>(Atom<T> atom) => AtomWidgetMixin.of(this).container.invalidate(atom);
+
+  /// Batches multiple mutations/invalidation together.
+  FutureOr<T?> batch<T>(AtomBatchFactory<T> callback) => AtomWidgetMixin.of(this).container.batch(callback);
 }

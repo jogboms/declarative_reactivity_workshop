@@ -12,11 +12,24 @@ typedef AtomSelector<T, U> = U Function(T value);
 typedef AtomListener<T> = void Function(T? previous, T value);
 @optionalTypeArgs
 typedef AtomSubscription<T> = ({ValueCallback<T> get, VoidCallback cancel});
+typedef AtomBatchFactory<T> = FutureOr<T> Function(AtomBatchContext context);
+
+mixin AtomBatchContext {
+  /// Returns the current value of [atom].
+  T get<T>(Atom<T> atom);
+
+  /// Mutates [atom] with [mutator] and returns the new value.
+  T mutate<T>(Atom<T> atom, AtomMutation<T> mutator);
+
+  /// Invalidates [atom] so that it will rebuild.
+  void invalidate<T>(Atom<T> atom);
+}
 
 /// A context that can be used to interact with [Atom]s.
 @optionalTypeArgs
-mixin AtomContext<U> {
+mixin AtomContext<U> implements AtomBatchContext {
   /// Returns the current value of [atom]. If [rebuildOnChange] is true, it will rebuild itself when the [atom] changes.
+  @override
   T get<T>(
     Atom<T> atom, {
     bool rebuildOnChange = true,
@@ -31,6 +44,7 @@ mixin AtomContext<U> {
 
   /// Mutates [atom] with [mutator] and returns the new value.
   @protected
+  @override
   T mutate<T>(Atom<T> atom, AtomMutation<T> mutator);
 
   /// Mutates itself and returns the new value.
@@ -38,6 +52,7 @@ mixin AtomContext<U> {
 
   /// Invalidates [atom] so that it will rebuild.
   @protected
+  @override
   void invalidate<T>(Atom<T> atom);
 
   /// Invalidates itself so that it will rebuild.
@@ -52,13 +67,17 @@ final class AtomBinding {
   AtomBinding._({
     Map<Atom, AtomElement>? elements,
     AtomScheduler? scheduler,
+    AtomBatcher? batcher,
   })  : _elements = elements ?? {},
-        _scheduler = scheduler ?? AtomScheduler();
+        _scheduler = scheduler ?? AtomScheduler(),
+        _batcher = batcher ?? AtomBatcher();
 
   final Map<Atom, AtomElement> _elements;
   final AtomScheduler _scheduler;
+  final AtomBatcher _batcher;
 
   void dispose() {
+    _batcher._dispose();
     _scheduler._dispose();
     _elements.clear();
   }
@@ -146,6 +165,23 @@ final class AtomContainer<U> implements AtomContext<U> {
     }
   }
 
+  FutureOr<T?> batch<T>(AtomBatchFactory<T> callback) {
+    try {
+      final context = AtomContainer(owner: _owner, parent: this);
+      switch (_binding._batcher._create(() => callback(context))) {
+        case Future<T?> future:
+          return future.onError(
+            (_, __) => null,
+            test: (error) => error is StateError,
+          );
+        case T value:
+          return value;
+      }
+    } on StateError {
+      return null;
+    }
+  }
+
   @override
   void onDispose(VoidCallback callback) {
     if (_owner case final element?) {
@@ -197,6 +233,11 @@ final class AtomContainer<U> implements AtomContext<U> {
   void _scheduleDisposeFor(AtomElement element) => _binding._scheduler._scheduleDisposeFor(element);
 
   void _remove(Atom atom) => _binding._elements.remove(atom);
+
+  void _addToBatchQueue(AtomElement element, VoidCallback notifyListeners) =>
+      _binding._batcher._addToQueue(element, notifyListeners);
+
+  void _removeFromBatchQueue(AtomElement element) => _binding._batcher._removeFromQueue(element);
 }
 
 /// A [Atom] that can be used to store a value.
@@ -303,9 +344,11 @@ class AtomElement<T> {
       final previous = _value;
       _value = value;
 
-      for (final listener in _listeners.toList(growable: false)) {
-        listener(previous, value);
-      }
+      _container?._addToBatchQueue(
+        this,
+        () => _notifyListeners(previous),
+      );
+
       for (final dependent in _dependents) {
         dependent._invalidate(schedule: true);
       }
@@ -363,6 +406,12 @@ class AtomElement<T> {
     return () => _listeners.remove(listener);
   }
 
+  void _notifyListeners(T? previous) {
+    for (final listener in _listeners.toList(growable: false)) {
+      listener(previous, value);
+    }
+  }
+
   void _attachDependency(AtomElement element, {bool track = false}) {
     if (track) {
       element._dependents.add(this);
@@ -400,6 +449,7 @@ class AtomElement<T> {
   void _dispose() {
     _runDispose();
     _detachDependencies();
+    _container?._removeFromBatchQueue(this);
     _state = AtomElementState.disposed;
     _value = null;
     _container = null;
@@ -461,6 +511,59 @@ final class AtomScheduler {
     _completer?.complete();
     _completer = null;
   }
+}
+
+@internal
+final class AtomBatcher {
+  final Map<AtomElement, VoidCallback> _queue = {};
+  bool _active = false;
+
+  FutureOr<T> _create<T>(ValueCallback<FutureOr<T>> callback) {
+    try {
+      _active = true;
+      return switch (callback()) {
+        Future<T> future => future.then(_finish).onError(_finishWithError),
+        T value => _finish(value),
+      };
+    } catch (error, stackTrace) {
+      _finishWithError(error, stackTrace);
+    }
+  }
+
+  T _finish<T>(T value) {
+    _runQueue();
+    _active = false;
+    return value;
+  }
+
+  Never _finishWithError<T>(Object error, StackTrace stackTrace) {
+    _runQueue();
+    _active = false;
+    throw Error.throwWithStackTrace(error, stackTrace);
+  }
+
+  void _addToQueue(
+    AtomElement element,
+    VoidCallback notifyListeners,
+  ) {
+    if (_active) {
+      _queue.putIfAbsent(element, () => notifyListeners);
+    } else {
+      notifyListeners();
+    }
+  }
+
+  void _removeFromQueue(AtomElement element) => _queue.remove(element);
+
+  void _runQueue() {
+    for (final entry in _queue.entries.toList(growable: false)) {
+      entry.value();
+      _queue.remove(entry.key);
+    }
+    _queue.clear();
+  }
+
+  void _dispose() => _queue.clear();
 }
 
 extension on VoidCallback? {
